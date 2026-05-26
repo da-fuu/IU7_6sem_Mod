@@ -1,13 +1,11 @@
-import sys
 import math
 import matplotlib.pyplot as plt
 
 VARIANT = 1
-SOLUTION = 1
 
 VARIANTS_DATA = {
     1: {
-        "N": 50, "tau": 5e-6, "EPSILON": 1e-4, "MAX_ITER": 50,
+        "N": 50, "tau": 1e-6, "EPSILON": 1e-4, "MAX_ITER": 50,
         "TABLE_k": [8.2e-3, 2.768e-2, 6.56e-2, 1.281e-1, 2.214e-1, 3.516e-1, 5.248e-1, 7.472e-1, 1.025]
     },
     2: {
@@ -15,9 +13,6 @@ VARIANTS_DATA = {
         "TABLE_k": [1.600, 5.400, 1.280e+1, 2.500e+1, 4.320e+1, 6.860e+1, 1.024e+2, 1.458e+2, 2.000e+2]
     }
 }
-
-if VARIANT not in VARIANTS_DATA:
-    sys.exit(1)
 
 cfg = VARIANTS_DATA[VARIANT]
 
@@ -49,8 +44,10 @@ TABLE_k = cfg["TABLE_k"]
 
 
 def get_index(val, x_array):
-    if val <= x_array[0]: return 0
-    if val >= x_array[-1]: return len(x_array) - 2
+    if val <= x_array[0]:
+        return 0
+    if val >= x_array[-1]:
+        return len(x_array) - 2
     for i in range(len(x_array) - 1):
         if x_array[i] <= val <= x_array[i+1]:
             return i
@@ -151,9 +148,7 @@ t = 0.0
 results = {0.0: list(T)}
 history_t, history_I = [], []
 
-max_iters = 1 if SOLUTION == 1 else MAX_ITER
-convergence_eps = -1.0 if SOLUTION == 1 else EPSILON
-
+global_max_T = max(T)
 while t <= t_end + 1e-9:
     I_t = I(t)
     history_t.append(t * 1e6)
@@ -161,7 +156,7 @@ while t <= t_end + 1e-9:
 
     T_guess = list(T)
 
-    for iteration in range(max_iters):
+    for iteration in range(MAX_ITER):
         sigma, lam, c_T, k_coef, up = compute_coeffs(T_guess)
 
         integral_sigma = sum(0.5 * (sigma[i] * r[i] + sigma[i + 1] * r[i + 1]) * h for i in range(N))
@@ -173,16 +168,19 @@ while t <= t_end + 1e-9:
         max_diff = max(abs(T_new_calc[i] - T_guess[i]) for i in range(N + 1))
         T_guess = list(T_new_calc)
 
-        if max_diff < convergence_eps:
+        if max_diff < EPSILON:
             break
 
     T = list(T_guess)
     t += tau
 
+    global_max_T = max(global_max_T, max(T))
+
     for pt in PRINT_TIMES:
         if abs(t - pt) < (tau * 0.5):
             results[pt] = list(T)
 
+print(f"Максимальная достигнутая температура за весь расчет: {global_max_T:.2f} К")
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
@@ -198,11 +196,11 @@ ax1.set_title("T(r)", fontsize=12)
 ax1.grid(True, linestyle=':', alpha=0.7)
 ax1.legend(loc='upper right', fontsize=9)
 
-ax2.plot(history_t, history_I, color='red', linewidth=2)
+ax2.plot(history_t, history_I, color='blue', linewidth=2)
 for pt in PRINT_TIMES:
     t_mks = pt * 1e6
     i_val = I(pt)
-    ax2.plot(t_mks, i_val, marker='o', color='black')
+    ax2.plot(t_mks, i_val, marker='o', color='red')
 
 ax2.set_title("I(t)", fontsize=12)
 ax2.grid(True, linestyle=':', alpha=0.7)

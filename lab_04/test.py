@@ -59,7 +59,7 @@ R = 0.35
 h = R / N
 tau = 1e-6
 T0 = 8000.0
-p_param = 10.0
+p_param = 6.0
 T_w = 1800.0
 r = [i * h for i in range(N + 1)]
 T = [T0 + (T_w - T0) * (ri / R)**p_param for ri in r]
@@ -75,9 +75,8 @@ def I_const(t):
 # =====================================================================
 # ГЛАВНЫЙ ЦИКЛ
 # =====================================================================
-print("Запуск симуляции с током I = const = 150 А...")
 t = 0.0
-MAX_TIME = 20000e-6      # УВЕЛИЧИЛИ ВРЕМЯ до 20 мс
+MAX_TIME = 20000e-6
 TOLERANCE = 1e-4
 
 history_t = []
@@ -137,10 +136,8 @@ while t <= MAX_TIME:
 
     max_diff = max(abs(T_new[i] - T[i]) for i in range(N+1))
 
-    # Сохраняем каждую 10-ю точку для ускорения работы
-    if int(t / tau) % 10 == 0:
-        history_t.append(t * 1e6)
-        history_T_center.append(T_new[0])
+    history_t.append(t * 1e6)
+    history_T_center.append(T_new[0])
 
     T = T_new
     t += tau

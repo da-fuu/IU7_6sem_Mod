@@ -73,7 +73,7 @@ def run_simulation(R=0.35, I_max=1000.0, t_max=80e-6, T_w=1800.0, T0=8000.0, p_p
     T = [T0 + (T_w - T0) * (ri / R)**p_param for ri in r]
 
     t = 0.0
-    t_target = 80e-6 # Сравниваем профили на пике тока (80 мкс)
+    t_target = 80e-6
 
     def I(curr_t):
         return I_max * (curr_t / t_max) * math.exp(-(curr_t / t_max - 1))

@@ -18,7 +18,7 @@ cfg = VARIANTS_DATA[VARIANT]
 
 T0 = 8000.0
 T_w = 1800.0
-p_param = 2.0
+p_param = 10.0
 R = 0.35
 I_max = 1000.0
 t_max = 80e-6
@@ -117,9 +117,17 @@ def solve_radiation(r, h, k_coef, up):
         Bu[i] = Au[i] + Cu[i] + k_coef[i] * r[i]
         Fu[i] = k_coef[i] * up[i] * r[i]
 
-    Bu[0], Cu[0], Au[0], Fu[0] = 1.0, 1.0, 0.0, 0.0
-    D_N = 1.0 / (3.0 * k_coef[N])
-    Au[N], Bu[N], Cu[N], Fu[N] = D_N, D_N + 0.39 * h, 0.0, 0.0
+    D_half = 1.0 / (3.0 * 0.5 * (k_coef[0] + k_coef[1]))
+    Cu[0] = 4.0 * D_half / (h**2)
+    Bu[0] = Cu[0] + k_coef[0]
+    Au[0] = 0.0
+    Fu[0] = k_coef[0] * up[0]
+
+    D_N_half = 1.0 / (3.0 * 0.5 * (k_coef[N-1] + k_coef[N]))
+    Au[N] = (R - 0.5 * h) * D_N_half / (h**2)
+    Bu[N] = Au[N] + 0.39 * R / h + k_coef[N] * R / 2.0
+    Cu[N] = 0.0
+    Fu[N] = k_coef[N] * up[N] * R / 2.0
 
     u_rad = progonka(Au, Bu, Cu, Fu)
     q = [C_LIGHT * k_coef[i] * (up[i] - u_rad[i]) for i in range(N + 1)]
@@ -135,7 +143,12 @@ def solve_temperature_step(T_prev, T_guess, r, h, tau, sigma, lam, c_T, E, q):
         Bt[i] = At[i] + Ct[i] + (c_T[i] * r[i]) / tau
         Ft[i] = (c_T[i] * r[i] / tau) * T_prev[i] + (sigma[i] * E**2 - q[i]) * r[i]
 
-    Bt[0], Ct[0], At[0], Ft[0] = 1.0, 1.0, 0.0, 0.0
+    lam_half = 0.5 * (lam[0] + lam[1])
+    Ct[0] = 4.0 * lam_half / (h**2)
+    Bt[0] = Ct[0] + c_T[0] / tau
+    At[0] = 0.0
+    Ft[0] = (c_T[0] / tau) * T_prev[0] + sigma[0] * E**2 - q[0]
+
     At[N], Bt[N], Ct[N], Ft[N] = 0.0, 1.0, 0.0, T_w
 
     return progonka(At, Bt, Ct, Ft)
@@ -165,10 +178,14 @@ while t <= t_end + 1e-9:
         q = solve_radiation(r, h, k_coef, up)
         T_new_calc = solve_temperature_step(T, T_guess, r, h, tau, sigma, lam, c_T, E, q)
 
-        max_diff = max(abs(T_new_calc[i] - T_guess[i]) for i in range(N + 1))
+        fl = 1
+        for i in range(N + 1):
+            if abs(T_new_calc[i] - T_guess[i]) > EPSILON:
+                fl = 0
+                break
         T_guess = list(T_new_calc)
 
-        if max_diff < EPSILON:
+        if fl:
             break
 
     T = list(T_guess)

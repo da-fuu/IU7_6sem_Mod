@@ -23,7 +23,7 @@ F0 = 30.0           # Вт/см²
 
 LASER_SOURCES = [
     {"f0": 150.0, "beta": 0.15, "x0": 5.0, "z0": 5.0},
-    {"f0": 150.0, "beta": 0.5, "x0": 3.0, "z0": 9.0},
+    # {"f0": 150.0, "beta": 0.5, "x0": 3.0, "z0": 9.0},
     # {"f0": 150.0, "beta": 0.15, "x0": 9.0, "z0": 1.0},
 
 ]
@@ -88,8 +88,13 @@ def x_sweep(u, u_star):
 
         # Внутренние узлы строки
         for i in range(1, Nx):
-            lam_minus = 0.5 * (get_lambda(u[i-1][k]) + get_lambda(u[i][k]))
-            lam_plus  = 0.5 * (get_lambda(u[i][k]) + get_lambda(u[i+1][k]))
+            lam_L = get_lambda(u[i-1][k])
+            lam_C = get_lambda(u[i][k])
+            lam_R = get_lambda(u[i+1][k])
+
+            # Среднее гармоническое
+            lam_minus = (2.0 * lam_C * lam_L) / (lam_C + lam_L)
+            lam_plus  = (2.0 * lam_C * lam_R) / (lam_C + lam_R)
 
             A[i] = (tau / hx**2) * lam_minus
             C[i] = (tau / hx**2) * lam_plus
@@ -139,8 +144,13 @@ def z_sweep(u_star, u_new):
 
         # Внутренние узлы столбца
         for k in range(1, Nz):
-            lam_minus = 0.5 * (get_lambda(u_star[i][k-1]) + get_lambda(u_star[i][k]))
-            lam_plus  = 0.5 * (get_lambda(u_star[i][k]) + get_lambda(u_star[i][k+1]))
+            lam_B = get_lambda(u_star[i][k-1])  # Bottom (снизу)
+            lam_C = get_lambda(u_star[i][k])    # Center (центр)
+            lam_T = get_lambda(u_star[i][k+1])  # Top (сверху)
+
+            # Среднее гармоническое
+            lam_minus = (2.0 * lam_C * lam_B) / (lam_C + lam_B)
+            lam_plus  = (2.0 * lam_C * lam_T) / (lam_C + lam_T)
 
             A[k] = (tau / hz**2) * lam_minus
             C[k] = (tau / hz**2) * lam_plus
